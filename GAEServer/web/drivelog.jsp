@@ -11,7 +11,7 @@
 %>
 
 <script type="text/javascript" src="/js/common.js"></script>
-<script type="text/javascript" src="http://openapi.map.naver.com/openapi/v2/maps.js?clientId=<%=Define.NAVER_CLIENT_ID%>"></script>
+<script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=<%=Define.NAVER_CLIENT_ID%>"></script>
 
 <script type="text/javascript">
 var CHK_MASK_DEP = 0x0001;
@@ -140,7 +140,7 @@ function showDetail(key) {
 			h = w;
 		}
 		
-		mapObj.setSize(new nhn.api.map.Size(w, h));
+		mapObj.setSize(new naver.maps.Size(w, h));
 		$("#pointListArea").height(h);
 	}, 500);
 	
@@ -156,7 +156,7 @@ function showDetail(key) {
 			
 			tbody.empty();
 			if(pathObj) {
-				mapObj.removeOverlay(pathObj);
+			    pathObj.setMap(null);
 			}
 			selMarker.setVisible(false);
 			
@@ -196,37 +196,34 @@ function showDetail(key) {
 }
 
 function drawLines(list) {
-	var icon = new nhn.api.map.Icon("/image/pin_spot2.png",
-			new nhn.api.map.Size(28, 37),
-			new nhn.api.map.Size(14, 37));
 	var listLatLng = [];
 	
 	var idx = 0;
 	
 	for(var k in list) {
-		var point = new nhn.api.map.LatLng(list[k].latitude, list[k].longitude);
+		var point = new naver.maps.LatLng(list[k].latitude, list[k].longitude);
 		idx++;
 		
 		listLatLng.push(point);
 	}
 	
-	mapObj.setBound(listLatLng);
+	mapObj.fitBounds(listLatLng);
 	
-	pathObj = new nhn.api.map.Polyline(listLatLng);
-	pathObj.setStyle({
-		strokeColor: "#FF0000",
-		strokeWidth: 5,
-		strokeOpacity: 1,
-		strokeStyle: "solid"
-	});
-	mapObj.addOverlay(pathObj);
+	pathObj = new naver.maps.Polyline({
+		map: mapObj,
+		path: listLatLng,
+        strokeColor: "#FF0000",
+        strokeWidth: 5,
+        strokeOpacity: 1,
+        strokeStyle: "solid"
+    });
 }
 
 function moveToPoint(idx) {
-	var pt = new nhn.api.map.LatLng(pointList[idx].latitude, pointList[idx].longitude);
+	var pt = new naver.maps.LatLng(pointList[idx].latitude, pointList[idx].longitude);
 	mapObj.setCenter(pt);
 	
-	selMarker.setPoint(pt);
+	selMarker.setPosition(pt);
 	selMarker.setVisible(true);
 }
 
@@ -261,7 +258,7 @@ function check() {
 	}else {
 		//데이터 셋팅 후 업데이트 처리
 		updateParam["key"] = currentKey;
-		updateParam["distance"] = pathObj.getLength();
+		updateParam["distance"] = pathObj.getDistance();
 		
 		$.ajax({
 			url: "/DriveLog/UpdateInfo",
@@ -299,18 +296,22 @@ function checkGeocode(t, lat, lng) {
 
 function initMap() {
 	var w = $("#map").width();
-	
-	mapObj = new nhn.api.map.Map(document.getElementById("map"), {
-		
+
+	mapObj = new naver.maps.Map('map', {
+
 	});
-	
-	var icon = new nhn.api.map.Icon("/image/pin_spot2.png",
-			new nhn.api.map.Size(28, 37),
-			new nhn.api.map.Size(14, 37));
-	
-	selMarker = new nhn.api.map.Marker(icon, {});
-	selMarker.setVisible(false);
-	mapObj.addOverlay(selMarker);
+
+	selMarker = new naver.maps.Marker({
+		icon: {
+		    url: "/image/pin_spot2.png",
+			size: new naver.maps.Point(28, 37),
+			anchor: new naver.maps.Point(14, 37)
+		},
+		position: new naver.maps.LatLng(128, 36)
+	});
+	selMarker.setMap(mapObj);
+
+	//selMarker.setVisible(false);
 }
 
 function mergePrevious() {
